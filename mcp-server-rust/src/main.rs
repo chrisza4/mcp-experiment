@@ -1,12 +1,15 @@
-use tools::Counter;
+use std::sync::Arc;
+
 use rmcp::transport::sse_server::SseServer;
+use tokio::sync::Mutex;
+use tools::Tools;
 use tracing_subscriber::{
     layer::SubscriberExt,
     util::SubscriberInitExt,
     {self},
 };
+use tracing::info;
 mod tools;
-
 
 const BIND_ADDRESS: &str = "127.0.0.1:8000";
 
@@ -19,10 +22,11 @@ async fn main() -> anyhow::Result<()> {
         )
         .with(tracing_subscriber::fmt::layer())
         .init();
-
+    info!("==hello==");
+    let counter = Arc::new(Mutex::new(0));
     let ct = SseServer::serve(BIND_ADDRESS.parse()?)
         .await?
-        .with_service(Counter::new);
+        .with_service(move || Tools::new(counter.clone()));
 
     tokio::signal::ctrl_c().await?;
     ct.cancel();

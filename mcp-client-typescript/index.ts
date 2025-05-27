@@ -40,6 +40,7 @@ class MCPClient {
       await this.mcp.connect(this.transport)
 
       const toolsResult = await this.mcp.listTools()
+      debugLog(toolsResult)
       this.tools = toolsResult.tools.map((tool) => {
         return {
           name: tool.name,
