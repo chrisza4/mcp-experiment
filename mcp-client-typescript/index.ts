@@ -29,7 +29,10 @@ class MCPClient {
   constructor() {
     this.ai = new GoogleGenAI({ apiKey: process.env.GEMINI_KEY })
     this.mcp = new Client({ name: "mcp-client-cli", version: "1.0.0" })
-    this.rl = readline.createInterface(process.stdin, process.stdout)
+    this.rl = readline.createInterface(
+      process.stdin as NodeJS.ReadableStream,
+      process.stdout as NodeJS.WritableStream
+    )
   }
   // methods will go here
   async connectToServer() {
@@ -86,43 +89,44 @@ class MCPClient {
         ],
       },
     })
-    if (content.functionCalls) {
-      debugLog(JSON.stringify(content))
-      for (const functionCall of content.functionCalls) {
-        debugLog(
-          `Call tool ${functionCall.name} with ${JSON.stringify(
-            functionCall.args
-          )}`
-        )
-        const result = await this.mcp.callTool({
-          name: functionCall.name || "",
-          arguments: functionCall.args,
-        })
-        debugLog(`Get response with content: ${JSON.stringify(result.content)}`)
-        messages.push({
-          parts: [
-            {
-              functionCall,
-            },
-          ],
-        })
-        messages.push({
-          parts: [
-            {
-              functionResponse: {
-                id: functionCall.id,
-                name: functionCall.name,
-                response: {
-                  output: result.content,
-                },
+    if (!content.functionCalls) {
+      console.log(content.text)
+      return
+    }
+
+    debugLog(JSON.stringify(content))
+    for (const functionCall of content.functionCalls) {
+      debugLog(
+        `Call tool ${functionCall.name} with ${JSON.stringify(
+          functionCall.args
+        )}`
+      )
+      const result = await this.mcp.callTool({
+        name: functionCall.name || "",
+        arguments: functionCall.args,
+      })
+      debugLog(`Get response with content: ${JSON.stringify(result.content)}`)
+      messages.push({
+        parts: [
+          {
+            functionCall,
+          },
+        ],
+      })
+      messages.push({
+        parts: [
+          {
+            functionResponse: {
+              id: functionCall.id,
+              name: functionCall.name,
+              response: {
+                output: result.content,
               },
             },
-          ],
-        })
-        return this.processQuery(messages)
-      }
-    } else {
-      console.log(content.text)
+          },
+        ],
+      })
+      return this.processQuery(messages)
     }
   }
 }
