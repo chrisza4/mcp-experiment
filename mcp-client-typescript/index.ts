@@ -5,6 +5,7 @@ import dotenv from "dotenv"
 import { SSEClientTransport } from "@modelcontextprotocol/sdk/client/sse.js"
 import { Transport } from "@modelcontextprotocol/sdk/shared/transport.js"
 import { geminiQuery } from "./gemini"
+import { claudeQuery } from "./claude"
 import { Logger } from "./logger"
 
 dotenv.config()
@@ -57,6 +58,7 @@ class MCPClient {
       process.exit(0)
     }
     await geminiQuery(input, this.tools, this.mcp)
+    // await claudeQuery(input, this.tools, this.mcp)
     this.run()
   }
 }

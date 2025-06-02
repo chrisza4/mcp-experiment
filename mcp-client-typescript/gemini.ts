@@ -18,7 +18,7 @@ export async function geminiQuery(input: string, tools: Tool[], mcp: Client) {
 
 async function processQuery(messages: Content[], tools: Tool[], mcp: Client) {
   const content = await ai.models.generateContent({
-    model: "gemini-2.0-flash",
+    model: "gemini-2.5-flash-preview-05-20",
     contents: messages,
     config: {
       tools: [
@@ -48,6 +48,7 @@ async function processQuery(messages: Content[], tools: Tool[], mcp: Client) {
     })
     logger.debug(`Get response with content: ${JSON.stringify(result.content)}`)
     messages.push({
+      role: "model",
       parts: [
         {
           functionCall,
@@ -55,6 +56,7 @@ async function processQuery(messages: Content[], tools: Tool[], mcp: Client) {
       ],
     })
     messages.push({
+      role: "user",
       parts: [
         {
           functionResponse: {

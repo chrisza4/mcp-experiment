@@ -23,7 +23,7 @@ impl Tools {
         Self { counter }
     }
 
-    #[tool(description = "Increment the counter by 1")]
+    #[tool(description = "Increment the counter by 1 and get the value of counter after increment")]
     async fn increment(&self) -> Result<CallToolResult, McpError> {
         let mut counter = self.counter.lock().await;
         *counter += 1;
@@ -32,7 +32,7 @@ impl Tools {
         )]))
     }
 
-    #[tool(description = "Decrement the counter by 1")]
+    #[tool(description = "Decrement the counter by 1, and get the value of counter after decrement")]
     async fn decrement(&self) -> Result<CallToolResult, McpError> {
         let mut counter = self.counter.lock().await;
         *counter -= 1;
