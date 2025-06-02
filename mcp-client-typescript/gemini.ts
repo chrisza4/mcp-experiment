@@ -2,6 +2,7 @@ import { Tool } from "@anthropic-ai/sdk/resources/messages.mjs"
 import {
   Content,
   FunctionDeclaration,
+  GenerateContentResponse,
   GoogleGenAI,
   Schema,
 } from "@google/genai"
@@ -11,12 +12,32 @@ import { Client } from "@modelcontextprotocol/sdk/client/index.js"
 const logger = new Logger()
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_KEY })
 
-export async function geminiQuery(input: string, tools: Tool[], mcp: Client) {
-  const messages: Content[] = [{ role: "user", parts: [{ text: input }] }]
+export async function geminiQuery(
+  input: string,
+  tools: Tool[],
+  mcp: Client,
+  previousMessages: Content[]
+): Promise<Content[]> {
+  const message: Content = { role: "user", parts: [{ text: input }] }
+  const messages = [...previousMessages, message]
   return processQuery(messages, tools, mcp)
 }
 
-async function processQuery(messages: Content[], tools: Tool[], mcp: Client) {
+function addModelResponseToContent(
+  messages: Content[],
+  content: GenerateContentResponse
+): Content[] {
+  if (content.candidates && content.candidates[0].content) {
+    return [...messages, content.candidates[0].content]
+  }
+  return messages
+}
+
+async function processQuery(
+  messages: Content[],
+  tools: Tool[],
+  mcp: Client
+): Promise<Content[]> {
   const content = await ai.models.generateContent({
     model: "gemini-2.5-flash-preview-05-20",
     contents: messages,
@@ -32,12 +53,14 @@ async function processQuery(messages: Content[], tools: Tool[], mcp: Client) {
       ],
     },
   })
-  if (!content.functionCalls) {
-    logger.info(content.text)
-    return
-  }
+
+  const newMessages = addModelResponseToContent(messages, content)
 
   logger.debug(JSON.stringify(content))
+  if (!content.functionCalls) {
+    logger.info("From Gemini: ", content.text)
+    return newMessages
+  }
   for (const functionCall of content.functionCalls) {
     logger.debug(
       `Call tool ${functionCall.name} with ${JSON.stringify(functionCall.args)}`
@@ -47,15 +70,7 @@ async function processQuery(messages: Content[], tools: Tool[], mcp: Client) {
       arguments: functionCall.args,
     })
     logger.debug(`Get response with content: ${JSON.stringify(result.content)}`)
-    messages.push({
-      role: "model",
-      parts: [
-        {
-          functionCall,
-        },
-      ],
-    })
-    messages.push({
+    newMessages.push({
       role: "user",
       parts: [
         {
@@ -69,8 +84,8 @@ async function processQuery(messages: Content[], tools: Tool[], mcp: Client) {
         },
       ],
     })
-    return processQuery(messages, tools, mcp)
   }
+  return processQuery(newMessages, tools, mcp)
 }
 
 function toGoogleSchema(t: Tool.InputSchema): Schema {

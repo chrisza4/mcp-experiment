@@ -7,6 +7,8 @@ import { Transport } from "@modelcontextprotocol/sdk/shared/transport.js"
 import { geminiQuery } from "./gemini"
 import { claudeQuery } from "./claude"
 import { Logger } from "./logger"
+import Anthropic from "@anthropic-ai/sdk"
+import { Content } from "@google/genai"
 
 dotenv.config()
 const logger = new Logger()
@@ -15,6 +17,7 @@ class MCPClient {
   private mcp: Client
   private transport: Transport | null = null
   private tools: Tool[] = []
+  private previousMessages: Anthropic.Messages.MessageParam[] | Content[] = []
   private rl: readline.Interface
 
   constructor() {
@@ -57,7 +60,12 @@ class MCPClient {
       this.rl.close()
       process.exit(0)
     }
-    await geminiQuery(input, this.tools, this.mcp)
+    this.previousMessages = await geminiQuery(
+      input,
+      this.tools,
+      this.mcp,
+      this.previousMessages
+    )
     // await claudeQuery(input, this.tools, this.mcp)
     this.run()
   }
