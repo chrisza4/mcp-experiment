@@ -1,4 +1,7 @@
-import { Tool } from "@anthropic-ai/sdk/resources/messages/messages.mjs"
+import {
+  MessageParam,
+  Tool,
+} from "@anthropic-ai/sdk/resources/messages/messages.mjs"
 import { Client } from "@modelcontextprotocol/sdk/client/index.js"
 import readline from "readline/promises"
 import dotenv from "dotenv"
@@ -60,13 +63,18 @@ class MCPClient {
       this.rl.close()
       process.exit(0)
     }
-    this.previousMessages = await geminiQuery(
+    // this.previousMessages = await geminiQuery(
+    //   input,
+    //   this.tools,
+    //   this.mcp,
+    //   this.previousMessages
+    // )
+    this.previousMessages = await claudeQuery(
       input,
       this.tools,
       this.mcp,
-      this.previousMessages
+      this.previousMessages as MessageParam[]
     )
-    // await claudeQuery(input, this.tools, this.mcp)
     this.run()
   }
 }
